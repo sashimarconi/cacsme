@@ -849,12 +849,16 @@ img {
 
         // Escuta respostas do iframe (se ele implementar postMessage)
         window.addEventListener('message', function onMessage(e) {
+            console.log('[parent] message received from', e.origin, e.data);
             if (e.origin !== iframeOrigin) return;
             const data = e.data || {};
             if (data.type === 'pixCode' && data.code) {
+                // tentar copiar (pode falhar se não for considerado gesto do usuário)
                 navigator.clipboard.writeText(data.code).then(() => {
+                    console.log('[parent] clipboard.writeText succeeded');
                     alert('PIX copiado para a área de transferência.');
-                }).catch(() => {
+                }).catch((err) => {
+                    console.warn('[parent] clipboard.writeText failed', err);
                     alert('Não foi possível copiar automaticamente. Código: ' + data.code);
                 });
             }
@@ -870,8 +874,10 @@ img {
 
             // Envia pedido — o iframe precisa suportar esse protocolo para responder
             try {
+                console.log('[parent] sending requestPixCode to', iframeOrigin);
                 iframe.contentWindow.postMessage({ type: 'requestPixCode' }, iframeOrigin);
             } catch (err) {
+                console.warn('[parent] postMessage failed', err);
                 // se falhar, abrir em nova aba
                 window.open(pagSeguroIframe.src, '_blank');
                 return;
