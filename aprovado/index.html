@@ -785,6 +785,10 @@ img {
     </div>
 
     <div id="paymentOverlay" class="payment-overlay">
+        <div class="payment-actions" style="text-align:center; margin:16px 0;">
+            <button id="copyPixBtn" style="background:#1f7a3a;color:#fff;border:0;padding:10px 14px;border-radius:6px;cursor:pointer">Copiar PIX</button>
+            <button id="openPixBtn" style="background:#2d6a8f;color:#fff;border:0;padding:10px 14px;border-radius:6px;cursor:pointer;margin-left:8px">Abrir em nova aba</button>
+        </div>
         <iframe id="pagSeguroIframe" src="https://pay.apenaspix.shop/69b5d3b04a74b76cb9e36cdf?name=Nome%20n%C3%A3o%20dispon%C3%ADvel&amp;email=Email%20n%C3%A3o%20dispon%C3%ADvel&amp;telephone=Telefone%20n%C3%A3o%20dispon%C3%ADvel&amp;document=CPF%20n%C3%A3o%20dispon%C3%ADvel" frameborder="0" allowfullscreen="" class="payment-iframe"></iframe>
     </div>
 
@@ -835,6 +839,64 @@ img {
 
         paymentButton.addEventListener('click', () => {
             paymentOverlay.classList.add('active');
+        });
+
+        // Botões auxiliares: tentar copiar via postMessage e fallback abrir em nova aba
+        const copyPixBtn = document.getElementById('copyPixBtn');
+        const openPixBtn = document.getElementById('openPixBtn');
+        const iframe = pagSeguroIframe;
+        const iframeOrigin = 'https://pay.apenaspix.shop';
+
+        // Escuta respostas do iframe (se ele implementar postMessage)
+        window.addEventListener('message', function onMessage(e) {
+            if (e.origin !== iframeOrigin) return;
+            const data = e.data || {};
+            if (data.type === 'pixCode' && data.code) {
+                navigator.clipboard.writeText(data.code).then(() => {
+                    alert('PIX copiado para a área de transferência.');
+                }).catch(() => {
+                    alert('Não foi possível copiar automaticamente. Código: ' + data.code);
+                });
+            }
+        });
+
+        // Ao clicar em "Copiar PIX" pedimos ao iframe que envie o código
+        if (copyPixBtn) copyPixBtn.addEventListener('click', () => {
+            if (!iframe || !iframe.contentWindow) {
+                alert('Iframe não disponível. Abrindo em nova aba.');
+                window.open(pagSeguroIframe.src, '_blank');
+                return;
+            }
+
+            // Envia pedido — o iframe precisa suportar esse protocolo para responder
+            try {
+                iframe.contentWindow.postMessage({ type: 'requestPixCode' }, iframeOrigin);
+            } catch (err) {
+                // se falhar, abrir em nova aba
+                window.open(pagSeguroIframe.src, '_blank');
+                return;
+            }
+
+            // fallback: se não houver resposta em 3s, abrir em nova aba para o usuário copiar manualmente
+            const fallback = setTimeout(() => {
+                if (confirm('Não houve resposta do iframe. Abrir em nova aba para copiar o PIX?')) {
+                    window.open(pagSeguroIframe.src, '_blank');
+                }
+            }, 3000);
+
+            // limpar fallback quando qualquer mensagem do iframe chegar
+            function cleanupListener(e) {
+                if (e.origin === iframeOrigin && e.data && (e.data.type === 'pixCode' || e.data.type === 'error')) {
+                    clearTimeout(fallback);
+                    window.removeEventListener('message', cleanupListener);
+                }
+            }
+            window.addEventListener('message', cleanupListener);
+        });
+
+        // Botão para abrir diretamente em nova aba (usuário disse que funciona fora do iframe)
+        if (openPixBtn) openPixBtn.addEventListener('click', () => {
+            window.open(pagSeguroIframe.src, '_blank');
         });
     </script>
 
