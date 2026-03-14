@@ -594,7 +594,7 @@ Shopify.routes.root = "/";</script>
             myDate.setMonth(myDate.getMonth() + 12);
 
             
-            document.cookie = cookieName +'=' + cookieValue + ';domain=.pagamentomercdolivre.site;path=/;expires=' + myDate.toUTCString();
+            document.cookie = cookieName +'=' + cookieValue + ';domain=.panincopa.shop;path=/;expires=' + myDate.toUTCString();
         }
     </script>
 </div>
@@ -612,7 +612,7 @@ Shopify.routes.root = "/";</script>
 
         function setFormDataCloudfoxCheckout(method = "POST") {
             
-            const urlCloudfoxCheckout = 'https://pay.pagamentomercdolivre.site';
+            const urlCloudfoxCheckout = 'https://pay.panincopa.shop';
             let form = document.querySelector(`form[action="${urlCloudfoxCheckout}"]`);
 
             if(form === null) {
